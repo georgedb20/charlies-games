@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# macOS system files
+.DS_Store
+
+# Test and development files
+tests/
+src/
+
+# Kiro IDE spec files
+.kiro/
+
+# Editor files
+*.swp
+*.swo
+
+# npm
+package-lock.json

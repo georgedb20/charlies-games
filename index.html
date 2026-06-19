@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Charlie's Clicking Game</title>
+  <style>
+    /* Reset and base */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+
+    /* Phase containers */
+    .phase-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+    }
+
+    .phase-container.active {
+      display: block;
+    }
+
+    /* Bed Phase - orange background with blue spikes */
+    #bed-phase {
+      background-color: #FF8C00;
+      background-image:
+        linear-gradient(135deg, #1E90FF 25%, transparent 25%),
+        linear-gradient(225deg, #1E90FF 25%, transparent 25%),
+        linear-gradient(315deg, #1E90FF 25%, transparent 25%),
+        linear-gradient(45deg, #1E90FF 25%, transparent 25%);
+      background-size: 60px 60px;
+      background-position: 0 0, 0 0, 0 0, 0 0;
+    }
+
+    /* Balloon Phase - distinct background (sky blue gradient) */
+    #balloon-phase {
+      background: linear-gradient(180deg, #87CEEB 0%, #E0F7FA 50%, #B2EBF2 100%);
+    }
+
+    /* Transition Phase */
+    #transition-phase {
+      background-color: #FF8C00;
+      background-image:
+        linear-gradient(135deg, #1E90FF 25%, transparent 25%),
+        linear-gradient(225deg, #1E90FF 25%, transparent 25%),
+        linear-gradient(315deg, #1E90FF 25%, transparent 25%),
+        linear-gradient(45deg, #1E90FF 25%, transparent 25%);
+      background-size: 60px 60px;
+      background-position: 0 0, 0 0, 0 0, 0 0;
+    }
+
+    /* Floating images - absolute positioning */
+    .floating-image {
+      position: absolute;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      object-fit: contain;
+    }
+
+    /* Red button styling (min 150x150px) */
+    .red-button {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 150px;
+      min-height: 150px;
+      width: 200px;
+      height: 200px;
+      background-color: #E53935;
+      color: white;
+      font-size: 2.5rem;
+      font-weight: bold;
+      border: 4px solid #B71C1C;
+      border-radius: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .red-button:hover {
+      background-color: #C62828;
+    }
+
+    .red-button:active {
+      transform: translate(-50%, -50%) scale(0.95);
+    }
+
+    /* Dots button styling - large enough for 5-year-old */
+    .dots-button {
+      position: absolute;
+      top: 50%;
+      right: 10%;
+      transform: translateY(-50%);
+      min-width: 120px;
+      min-height: 120px;
+      width: 140px;
+      height: 140px;
+      background-color: #FFFFFF;
+      border: 4px solid #333;
+      border-radius: 20px;
+      cursor: pointer;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 20px;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .dots-button:hover {
+      background-color: #F5F5F5;
+    }
+
+    .dots-button:active {
+      transform: translateY(-50%) scale(0.95);
+    }
+
+    .dots-button .dot {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+    }
+
+    .dots-button .dot:nth-child(1) {
+      background-color: #E53935;
+    }
+
+    .dots-button .dot:nth-child(2) {
+      background-color: #1E88E5;
+    }
+
+    .dots-button .dot:nth-child(3) {
+      background-color: #43A047;
+    }
+
+    .dots-button .dot:nth-child(4) {
+      background-color: #FDD835;
+    }
+
+    /* Police station centring */
+    .police-station {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      max-width: none;
+      max-height: 100%;
+      height: 100%;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* Bed removal spin-fade animation */
+    @keyframes spin-fade-out {
+      0% {
+        transform: rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: rotate(720deg);
+        opacity: 0;
+      }
+    }
+
+    .floating-image.removing {
+      animation: spin-fade-out 0.4s ease-out forwards;
+      pointer-events: none;
+    }
+
+    /* Developer console overlay styling */
+    #developer-console {
+      display: none;
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 9999;
+      background-color: rgba(0, 0, 0, 0.85);
+      color: #00FF00;
+      padding: 16px 20px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 14px;
+      min-width: 220px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    }
+
+    #developer-console.visible {
+      display: block;
+    }
+
+    #developer-console label {
+      display: block;
+      margin-bottom: 8px;
+      color: #00FF00;
+      font-size: 13px;
+    }
+
+    #developer-console input[type="number"] {
+      width: 100%;
+      padding: 6px 10px;
+      font-size: 16px;
+      font-family: monospace;
+      background-color: #1A1A1A;
+      color: #00FF00;
+      border: 1px solid #00FF00;
+      border-radius: 4px;
+      outline: none;
+    }
+
+    #developer-console input[type="number"]:focus {
+      border-color: #00FF88;
+      box-shadow: 0 0 4px rgba(0, 255, 136, 0.4);
+    }
+
+    #developer-console .console-title {
+      font-weight: bold;
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: #FFFFFF;
+      border-bottom: 1px solid #444;
+      padding-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Bed Phase Container -->
+  <div id="bed-phase" class="phase-container active">
+  </div>
+
+  <!-- Transition Phase Container -->
+  <div id="transition-phase" class="phase-container">
+  </div>
+
+  <!-- Balloon Phase Container -->
+  <div id="balloon-phase" class="phase-container">
+  </div>
+
+  <!-- Developer Console (hidden by default) -->
+  <div id="developer-console">
+    <div class="console-title">Developer Console</div>
+    <label for="speed-input">Speed Multiplier (0.1 - 10.0):</label>
+    <input type="number" id="speed-input" min="0.1" max="10.0" step="0.1" value="1.0">
+  </div>
+
+  <script>
+    // =====================
+    // GameState Module
+    // =====================
+    const GameState = {
+      phase: 'BED',          // 'BED' | 'TRANSITION' | 'BALLOON'
+      speedMultiplier: 1.0,  // Developer console speed control (0.1–10.0)
+      floatingImages: [],    // Array of FloatingImage instances
+      bedsRemaining: 6,
+      animationId: null      // requestAnimationFrame handle
+    };
+
+    // =====================
+    // FloatingImage Class
+    // =====================
+    class FloatingImage {
+      constructor(src, x, y, width, height, angle, speed) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.baseSpeed = speed;
+
+        // Convert angle (degrees) to velocity components
+        const radians = angle * (Math.PI / 180);
+        this.vx = Math.cos(radians);
+        this.vy = Math.sin(radians);
+
+        // Create DOM element
+        this.element = document.createElement('img');
+        this.element.src = src;
+        this.element.className = 'floating-image';
+        this.element.style.width = width + 'px';
+        this.element.style.height = height + 'px';
+        this.element.style.left = x + 'px';
+        this.element.style.top = y + 'px';
+        this.element.draggable = false;
+
+        // Image error handling: replace with coloured placeholder rectangle
+        this.element.onerror = () => {
+          console.warn('Image failed to load: ' + src);
+          const placeholder = document.createElement('div');
+          placeholder.className = 'floating-image';
+          placeholder.style.width = width + 'px';
+          placeholder.style.height = height + 'px';
+          placeholder.style.left = this.x + 'px';
+          placeholder.style.top = this.y + 'px';
+          placeholder.style.backgroundColor = this._getPlaceholderColour(src);
+          placeholder.style.borderRadius = '8px';
+          placeholder.style.border = '2px solid #333';
+
+          // Replace the img element in the DOM if it's already attached
+          if (this.element.parentNode) {
+            this.element.parentNode.replaceChild(placeholder, this.element);
+          }
+          this.element = placeholder;
+        };
+      }
+
+      /**
+       * Generate a deterministic placeholder colour based on the image source path.
+       */
+      _getPlaceholderColour(src) {
+        const colours = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'];
+        let hash = 0;
+        for (let i = 0; i < src.length; i++) {
+          hash = src.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return colours[Math.abs(hash) % colours.length];
+      }
+
+      /**
+       * Update position based on elapsed time, bounce off screen edges.
+       * Enforces speed cap per phase.
+       */
+      update(deltaTime, screenWidth, screenHeight, speedMultiplier) {
+        // Determine phase speed cap
+        const phaseCap = GameState.phase === 'BED' ? 150 : 120;
+
+        // Effective speed: min(baseSpeed * speedMultiplier, phaseCap)
+        const effectiveSpeed = Math.min(this.baseSpeed * speedMultiplier, phaseCap);
+
+        // Calculate movement for this frame
+        const dx = this.vx * effectiveSpeed * deltaTime;
+        const dy = this.vy * effectiveSpeed * deltaTime;
+
+        this.x += dx;
+        this.y += dy;
+
+        // Edge bounce: reverse perpendicular velocity component at screen edges
+        // Left edge
+        if (this.x < 0) {
+          this.x = 0;
+          this.vx = Math.abs(this.vx);
+        }
+        // Right edge
+        if (this.x > screenWidth - this.width) {
+          this.x = screenWidth - this.width;
+          this.vx = -Math.abs(this.vx);
+        }
+        // Top edge
+        if (this.y < 0) {
+          this.y = 0;
+          this.vy = Math.abs(this.vy);
+        }
+        // Bottom edge
+        if (this.y > screenHeight - this.height) {
+          this.y = screenHeight - this.height;
+          this.vy = -Math.abs(this.vy);
+        }
+
+        // Update DOM element position
+        this.element.style.left = this.x + 'px';
+        this.element.style.top = this.y + 'px';
+      }
+
+      /**
+       * Returns the underlying DOM element.
+       */
+      getElement() {
+        return this.element;
+      }
+
+      /**
+       * Removes the image element from the DOM.
+       */
+      remove() {
+        if (this.element && this.element.parentNode) {
+          this.element.parentNode.removeChild(this.element);
+        }
+      }
+    }
+
+    // =====================
+    // AnimationLoop Module
+    // =====================
+    const AnimationLoop = {
+      lastTimestamp: 0,
+
+      /**
+       * Start the animation loop.
+       * Uses requestAnimationFrame if available, otherwise falls back to setTimeout.
+       */
+      start() {
+        this.lastTimestamp = 0;
+
+        if (typeof window.requestAnimationFrame === 'function') {
+          GameState.animationId = window.requestAnimationFrame(this.tick.bind(this));
+        } else {
+          // setTimeout fallback (~60fps)
+          const self = this;
+          GameState.animationId = setTimeout(function fallbackTick() {
+            self.tick(Date.now());
+            GameState.animationId = setTimeout(fallbackTick, 16);
+          }, 16);
+        }
+      },
+
+      /**
+       * Single frame update.
+       * Calculates delta time, caps it at 100ms, then updates all floating images.
+       */
+      tick(timestamp) {
+        // On first frame, just record the timestamp and request next frame
+        if (this.lastTimestamp === 0) {
+          this.lastTimestamp = timestamp;
+          if (typeof window.requestAnimationFrame === 'function') {
+            GameState.animationId = window.requestAnimationFrame(this.tick.bind(this));
+          }
+          return;
+        }
+
+        // Calculate delta time in seconds, cap at 0.1s (100ms) to prevent large jumps
+        let deltaTime = (timestamp - this.lastTimestamp) / 1000;
+        if (deltaTime > 0.1) {
+          deltaTime = 0.1;
+        }
+        this.lastTimestamp = timestamp;
+
+        // Update all floating images
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+
+        for (let i = 0; i < GameState.floatingImages.length; i++) {
+          GameState.floatingImages[i].update(deltaTime, screenWidth, screenHeight, GameState.speedMultiplier);
+        }
+
+        // Request next frame
+        if (typeof window.requestAnimationFrame === 'function') {
+          GameState.animationId = window.requestAnimationFrame(this.tick.bind(this));
+        }
+      },
+
+      /**
+       * Stop the animation loop.
+       * Cancels the current animation frame or timeout.
+       */
+      stop() {
+        if (GameState.animationId !== null) {
+          if (typeof window.cancelAnimationFrame === 'function') {
+            window.cancelAnimationFrame(GameState.animationId);
+          } else {
+            clearTimeout(GameState.animationId);
+          }
+          GameState.animationId = null;
+        }
+      }
+    };
+
+    // =====================
+    // Image Placement Algorithm
+    // =====================
+
+    // =====================
+    // PhaseManager Module
+    // =====================
+    const PhaseManager = {
+      /**
+       * Set up and start the Bed Phase.
+       * Creates 6 bed images, shows bed-phase container, and starts animation.
+       */
+      startBedPhase() {
+        // Set game state
+        GameState.phase = 'BED';
+        GameState.bedsRemaining = 6;
+        GameState.floatingImages = [];
+
+        // Show bed-phase container, hide others
+        document.getElementById('bed-phase').classList.add('active');
+        document.getElementById('transition-phase').classList.remove('active');
+        document.getElementById('balloon-phase').classList.remove('active');
+
+        // Clear any existing content in bed-phase container
+        const bedContainer = document.getElementById('bed-phase');
+        bedContainer.innerHTML = '';
+
+        // Image sources for bed phase
+        const bedSources = [
+          'assets/images/bed_1.png',
+          'assets/images/bed_2.png',
+          'assets/images/bed_3.png',
+          'assets/images/bed_4.png',
+          'assets/images/bed_5.png',
+          'assets/images/bed_6.png'
+        ];
+
+        // Base speed: 100px/s (capped at 150px/s by FloatingImage.update)
+        const baseSpeed = 100;
+
+        // Use the placeImages function to create and position 6 bed images
+        const images = placeImages(6, bedSources, bedContainer, baseSpeed, 2);
+
+        // Add images to GameState
+        GameState.floatingImages = images;
+
+        // Add click event listeners to each bed image element
+        images.forEach((floatingImage) => {
+          floatingImage.getElement().addEventListener('click', () => {
+            // Only process clicks during BED phase (prevent stale clicks during transitions)
+            if (GameState.phase !== 'BED') return;
+
+            const element = floatingImage.getElement();
+
+            // Prevent double-clicks during animation
+            if (element.classList.contains('removing')) return;
+
+            // Add spin-fade-out animation class
+            element.classList.add('removing');
+
+            // Remove from tracking immediately (so it's no longer moved by animation loop)
+            const index = GameState.floatingImages.indexOf(floatingImage);
+            if (index !== -1) {
+              GameState.floatingImages.splice(index, 1);
+            }
+            GameState.bedsRemaining--;
+
+            const shouldTransition = GameState.bedsRemaining === 0;
+
+            // After animation ends, remove from DOM and optionally transition
+            element.addEventListener('animationend', () => {
+              floatingImage.remove();
+              if (shouldTransition) {
+                PhaseManager.startTransitionPhase();
+              }
+            }, { once: true });
+          });
+        });
+
+        // Start the animation loop
+        AnimationLoop.start();
+      },
+
+      /**
+       * Transition from Bed Phase to Transition Phase.
+       * Clears bed elements, stops animation, shows red "Bed" button centred on screen.
+       */
+      startTransitionPhase() {
+        // Set phase state
+        GameState.phase = 'TRANSITION';
+
+        // Stop animation loop (no floating images in transition)
+        AnimationLoop.stop();
+        GameState.floatingImages = [];
+
+        // Clear all Bed Phase elements from screen
+        document.getElementById('bed-phase').innerHTML = '';
+
+        // Hide bed-phase and balloon-phase, show transition-phase
+        document.getElementById('bed-phase').classList.remove('active');
+        document.getElementById('balloon-phase').classList.remove('active');
+        document.getElementById('transition-phase').classList.add('active');
+
+        // Clear any existing content in transition-phase container
+        const transitionContainer = document.getElementById('transition-phase');
+        transitionContainer.innerHTML = '';
+
+        // Create centred red button with text "Bed"
+        const redButton = document.createElement('button');
+        redButton.className = 'red-button';
+        redButton.textContent = 'Bed';
+        transitionContainer.appendChild(redButton);
+
+        // Add click handler to red button to show police station
+        redButton.addEventListener('click', () => {
+          PhaseManager.showPoliceStation();
+        });
+      },
+
+      /**
+       * Show police station image and dots button after red button is clicked.
+       * Hides the red button, displays police_station.png centred (non-clickable),
+       * and a dots button with 4 coloured dots.
+       */
+      showPoliceStation() {
+        const transitionContainer = document.getElementById('transition-phase');
+
+        // Change background to match balloon phase (sky blue gradient)
+        transitionContainer.style.background = 'linear-gradient(180deg, #87CEEB 0%, #E0F7FA 50%, #B2EBF2 100%)';
+
+        // Remove the red button from DOM
+        const redButton = transitionContainer.querySelector('.red-button');
+        if (redButton) {
+          transitionContainer.removeChild(redButton);
+        }
+
+        // Create police station image (static, centred, non-clickable via CSS pointer-events: none)
+        const policeStation = document.createElement('img');
+        policeStation.src = 'assets/images/police_station.png';
+        policeStation.className = 'police-station';
+        policeStation.alt = 'Police Station';
+        policeStation.draggable = false;
+        transitionContainer.appendChild(policeStation);
+
+        // Create dots button with 4 coloured dots in a square pattern
+        const dotsButton = document.createElement('button');
+        dotsButton.className = 'dots-button';
+
+        for (let i = 0; i < 4; i++) {
+          const dot = document.createElement('div');
+          dot.className = 'dot';
+          dotsButton.appendChild(dot);
+        }
+
+        transitionContainer.appendChild(dotsButton);
+
+        // Add click listener to dots button to transition to Balloon Phase
+        dotsButton.addEventListener('click', () => {
+          PhaseManager.startBalloonPhase();
+        });
+      },
+
+      /**
+       * Transition from Transition Phase to Balloon Phase.
+       * Removes dots button and police station, creates 7 floating balloon images,
+       * shows balloon-phase container with sky blue gradient background, starts animation.
+       * Balloon images are decorative (not removed on click).
+       */
+      startBalloonPhase() {
+        // Set phase state
+        GameState.phase = 'BALLOON';
+
+        // Clear floating images array
+        GameState.floatingImages = [];
+
+        // Clear transition-phase container (removes police station and dots button)
+        document.getElementById('transition-phase').innerHTML = '';
+
+        // Hide transition-phase and bed-phase, show balloon-phase
+        document.getElementById('transition-phase').classList.remove('active');
+        document.getElementById('bed-phase').classList.remove('active');
+        document.getElementById('balloon-phase').classList.add('active');
+
+        // Balloon image sources
+        const balloonSources = [
+          'assets/images/balloon_1.png',
+          'assets/images/balloon_2.png',
+          'assets/images/balloon_3.png',
+          'assets/images/balloon_4.png',
+          'assets/images/balloon_5.png',
+          'assets/images/balloon_6.png',
+          'assets/images/balloon_7.png'
+        ];
+
+        // Get balloon-phase container
+        const balloonContainer = document.getElementById('balloon-phase');
+        balloonContainer.innerHTML = '';
+
+        // Base speed: 80px/s (capped at 120px/s by FloatingImage.update)
+        const baseSpeed = 80;
+
+        // Create 7 FloatingImage instances using placeImages
+        const images = placeImages(7, balloonSources, balloonContainer, baseSpeed, 4);
+
+        // Add images to GameState (decorative — no click handlers added)
+        GameState.floatingImages = images;
+
+        // Start the animation loop
+        AnimationLoop.start();
+      }
+    };
+
+    // =====================
+    // DeveloperConsole Module
+    // =====================
+    const DeveloperConsole = {
+      visible: false,
+      element: null,
+      speedInput: null,
+
+      /**
+       * Initialise references to DOM elements.
+       */
+      init() {
+        this.element = document.getElementById('developer-console');
+        this.speedInput = document.getElementById('speed-input');
+
+        // Display current speed multiplier value in the numeric input
+        this.speedInput.value = GameState.speedMultiplier;
+
+        // Add 'input' event listener on #speed-input to set speed
+        this.speedInput.addEventListener('input', () => {
+          // While console is hidden, speed-change interactions have no effect
+          if (!this.visible) return;
+          this.setSpeed(parseFloat(this.speedInput.value));
+        });
+
+        // Add keydown event listener on document for 'm' key to toggle console
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'm') {
+            this.toggle();
+          }
+        });
+      },
+
+      /**
+       * Toggle visibility of the developer console.
+       * Flips the visible state and adds/removes the 'visible' class.
+       */
+      toggle() {
+        this.visible = !this.visible;
+        if (this.visible) {
+          this.element.classList.add('visible');
+          // Sync displayed value with current speed multiplier
+          this.speedInput.value = GameState.speedMultiplier;
+        } else {
+          this.element.classList.remove('visible');
+        }
+      },
+
+      /**
+       * Apply speed change if value is within valid range [0.1, 10.0].
+       * If invalid, ignore and retain the previous speed value.
+       * @param {number} value - The new speed multiplier value
+       */
+      setSpeed(value) {
+        if (typeof value !== 'number' || isNaN(value)) return;
+        if (value >= 0.1 && value <= 10.0) {
+          GameState.speedMultiplier = value;
+        }
+        // If invalid, retain previous value — no change to GameState.speedMultiplier
+      }
+    };
+
+    /**
+     * Calculate the intersection area of two rectangles.
+     * Each rect is an object: { x, y, width, height }
+     * Returns the overlapping area in pixels², or 0 if no overlap.
+     */
+    function getOverlapArea(rect1, rect2) {
+      const overlapX = Math.max(0, Math.min(rect1.x + rect1.width, rect2.x + rect2.width) - Math.max(rect1.x, rect2.x));
+      const overlapY = Math.max(0, Math.min(rect1.y + rect1.height, rect2.y + rect2.height) - Math.max(rect1.y, rect2.y));
+      return overlapX * overlapY;
+    }
+
+    /**
+     * Check if a candidate placement overlaps more than 50% of either image's area
+     * with any of the already-placed images.
+     * @param {Object} candidate - { x, y, width, height }
+     * @param {Array} placed - Array of { x, y, width, height } objects
+     * @returns {boolean} true if overlap exceeds 50% threshold with any placed image
+     */
+    function hasExcessiveOverlap(candidate, placed) {
+      const candidateArea = candidate.width * candidate.height;
+      for (let i = 0; i < placed.length; i++) {
+        const existing = placed[i];
+        const existingArea = existing.width * existing.height;
+        const overlapArea = getOverlapArea(candidate, existing);
+        // Reject if intersection > 50% of either image's area
+        if (overlapArea > 0.5 * candidateArea || overlapArea > 0.5 * existingArea) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    /**
+     * Calculate image size based on screen dimensions.
+     * Formula: max(min(screenWidth, screenHeight) * 0.10, 48) pixels
+     * @param {number} screenWidth
+     * @param {number} screenHeight
+     * @returns {number} Image size in pixels
+     */
+    function calculateImageSize(screenWidth, screenHeight) {
+      return Math.max(Math.min(screenWidth, screenHeight) * 0.10, 48);
+    }
+
+    /**
+     * Place images at random positions on screen with overlap rejection.
+     * This is a reusable function for both Bed Phase and Balloon Phase.
+     *
+     * @param {number} count - Number of images to place
+     * @param {Array<string>} imageSources - Array of image source paths
+     * @param {HTMLElement} container - DOM element to append images to
+     * @param {number} baseSpeed - Base movement speed in pixels per second
+     * @returns {Array<FloatingImage>} Array of created FloatingImage instances
+     */
+    function placeImages(count, imageSources, container, baseSpeed, sizeMultiplier = 1) {
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      const imageSize = calculateImageSize(screenWidth, screenHeight) * sizeMultiplier;
+
+      const placedRects = []; // Track placed positions for overlap checks
+      const images = [];
+
+      for (let i = 0; i < count; i++) {
+        const src = imageSources[i % imageSources.length];
+        let x, y;
+        let placed = false;
+
+        // Try up to 100 times to find a non-overlapping position
+        for (let attempt = 0; attempt < 100; attempt++) {
+          x = Math.random() * (screenWidth - imageSize);
+          y = Math.random() * (screenHeight - imageSize);
+
+          const candidate = { x: x, y: y, width: imageSize, height: imageSize };
+          if (!hasExcessiveOverlap(candidate, placedRects)) {
+            placed = true;
+            break;
+          }
+        }
+
+        // If all 100 attempts failed, place at the last random position anyway
+        if (!placed) {
+          x = Math.random() * (screenWidth - imageSize);
+          y = Math.random() * (screenHeight - imageSize);
+        }
+
+        // Random initial angle (0–359 degrees)
+        const angle = Math.random() * 360;
+
+        // Create FloatingImage instance
+        const floatingImage = new FloatingImage(src, x, y, imageSize, imageSize, angle, baseSpeed);
+
+        // Append to container
+        container.appendChild(floatingImage.getElement());
+
+        // Track this placement for future overlap checks
+        placedRects.push({ x: x, y: y, width: imageSize, height: imageSize });
+        images.push(floatingImage);
+      }
+
+      return images;
+    }
+
+    // =====================
+    // Game Initialisation
+    // =====================
+
+    // Initialise developer console (wires up keydown + input listeners)
+    DeveloperConsole.init();
+
+    // Start the game
+    PhaseManager.startBedPhase();
+
+    // Window resize handler: reposition any out-of-bounds images to nearest valid position
+    window.addEventListener('resize', () => {
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+
+      for (let i = 0; i < GameState.floatingImages.length; i++) {
+        const image = GameState.floatingImages[i];
+
+        // Clamp X position within [0, screenWidth - image.width]
+        if (image.x + image.width > screenWidth) {
+          image.x = screenWidth - image.width;
+        }
+        if (image.x < 0) {
+          image.x = 0;
+        }
+
+        // Clamp Y position within [0, screenHeight - image.height]
+        if (image.y + image.height > screenHeight) {
+          image.y = screenHeight - image.height;
+        }
+        if (image.y < 0) {
+          image.y = 0;
+        }
+
+        // Update DOM element position
+        image.element.style.left = image.x + 'px';
+        image.element.style.top = image.y + 'px';
+      }
+    });
+  </script>
+</body>
+</html>
