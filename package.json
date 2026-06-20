@@ -1,0 +1,16 @@
+{
+  "name": "childrens-clicking-game-tests",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "2.1.8",
+    "fast-check": "3.23.2",
+    "jsdom": "25.0.1",
+    "@vitest/coverage-v8": "2.1.8"
+  }
+}
