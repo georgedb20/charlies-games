@@ -77,6 +77,24 @@
       user-select: none;
       -webkit-user-select: none;
       object-fit: contain;
+      z-index: 2;
+    }
+
+    /* Balloon phase decorative text */
+    .balloon-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1;
+      font-size: clamp(1.2rem, 4vw, 3rem);
+      font-weight: bold;
+      color: rgba(255, 255, 255, 0.7);
+      text-align: center;
+      white-space: nowrap;
+      pointer-events: none;
+      user-select: none;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
     }
 
     /* Red button styling (min 150x150px) */
@@ -509,6 +527,12 @@
         const bedContainer = document.getElementById('bed-phase');
         bedContainer.innerHTML = '';
 
+        // Add instructional text (behind beds via z-index)
+        const bedText = document.createElement('div');
+        bedText.className = 'balloon-text';
+        bedText.textContent = 'Click the beds';
+        bedContainer.appendChild(bedText);
+
         // Image sources for bed phase
         const bedSources = [
           'assets/images/bed_1.png',
@@ -679,6 +703,12 @@
         // Get balloon-phase container
         const balloonContainer = document.getElementById('balloon-phase');
         balloonContainer.innerHTML = '';
+
+        // Add decorative text (behind balloons via z-index)
+        const balloonText = document.createElement('div');
+        balloonText.className = 'balloon-text';
+        balloonText.textContent = 'Relax and watch the balloons';
+        balloonContainer.appendChild(balloonText);
 
         // Base speed: 80px/s (capped at 120px/s by FloatingImage.update)
         const baseSpeed = 80;
