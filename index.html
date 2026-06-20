@@ -216,6 +216,47 @@
       pointer-events: none;
     }
 
+    .floating-image.fading-out {
+      transition: opacity 1s ease-out;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 0.7;
+        transform: translate(-50%, -50%) scale(1);
+      }
+      50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.1);
+      }
+    }
+
+    .balloon-text.pulsing {
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+
+    .countdown-widget {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 3;
+      font-size: 2rem;
+      font-weight: bold;
+      color: rgba(255, 255, 255, 0.85);
+      background-color: rgba(0, 0, 0, 0.3);
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      user-select: none;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
     /* Developer console overlay styling */
     #developer-console {
       display: none;
@@ -710,6 +751,12 @@
         balloonText.textContent = 'Relax and watch the balloons';
         balloonContainer.appendChild(balloonText);
 
+        // Add countdown widget
+        const countdown = document.createElement('div');
+        countdown.className = 'countdown-widget';
+        countdown.textContent = '10';
+        balloonContainer.appendChild(countdown);
+
         // Base speed: 80px/s (capped at 120px/s by FloatingImage.update)
         const baseSpeed = 80;
 
@@ -721,6 +768,50 @@
 
         // Start the animation loop
         AnimationLoop.start();
+
+        // Countdown timer - ticks every second
+        let secondsLeft = 10;
+        const countdownInterval = setInterval(() => {
+          if (GameState.phase !== 'BALLOON') {
+            clearInterval(countdownInterval);
+            return;
+          }
+
+          secondsLeft--;
+          const countdownEl = balloonContainer.querySelector('.countdown-widget');
+          if (countdownEl) {
+            countdownEl.textContent = secondsLeft;
+          }
+
+          if (secondsLeft <= 0) {
+            clearInterval(countdownInterval);
+
+            // Remove countdown widget
+            if (countdownEl) countdownEl.remove();
+
+            // Fade out all balloon images
+            GameState.floatingImages.forEach((img) => {
+              img.getElement().classList.add('fading-out');
+            });
+
+            // After fade completes (1s), change the text
+            setTimeout(() => {
+              if (GameState.phase !== 'BALLOON') return;
+              AnimationLoop.stop();
+              GameState.floatingImages = [];
+              const textEl = balloonContainer.querySelector('.balloon-text');
+              if (textEl) {
+                textEl.textContent = 'Taking you back to the start';
+                textEl.classList.add('pulsing');
+              }
+              const fadedImages = balloonContainer.querySelectorAll('.floating-image');
+              fadedImages.forEach((el) => el.remove());
+              setTimeout(() => {
+                PhaseManager.startBedPhase();
+              }, 3000);
+            }, 1000);
+          }
+        }, 1000);
       }
     };
 
